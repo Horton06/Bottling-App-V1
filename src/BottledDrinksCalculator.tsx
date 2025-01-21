@@ -150,6 +150,38 @@ const BottledDrinksCalculator = () => {
     return totals;
   };
 
+  const TEA_BATCH_SIZE = 1800; // ml per batch
+
+  const calculateTeaBatches = (amountInMl: number): number => {
+    return Math.ceil(amountInMl / TEA_BATCH_SIZE);
+  };
+
+  const formatAmount = (amount: number, unit: string, ingredient: string): string => {
+    // Special handling for tea to show batch count
+    if (ingredient.toLowerCase().includes('tea')) {
+      const batches = calculateTeaBatches(amount);
+      const batchText = `(${batches} ${batches === 1 ? 'batch' : 'batches'} of tea)`;
+      
+      if (unit === 'ml' && amount >= 1000) {
+        return `${(amount / 1000).toFixed(2)}L (${amount.toFixed(0)}ml) ${batchText}`;
+      }
+      return `${amount.toFixed(1)}${unit} ${batchText}`;
+    }
+    
+    // Convert syrup measurements to grams
+    if (ingredient.toLowerCase().includes('syrup')) {
+      return `${amount.toFixed(1)}g`;
+    }
+    
+    // Convert large ml amounts to L format
+    if (unit === 'ml' && amount >= 1000) {
+      return `${(amount / 1000).toFixed(2)}L (${amount.toFixed(0)}ml)`;
+    }
+    
+    // Standard format for other measurements
+    return `${amount.toFixed(1)}${unit}`;
+  };
+
   return (
     <div className="container mx-auto p-4 space-y-6">
       <Card>
@@ -303,23 +335,18 @@ const BottledDrinksCalculator = () => {
                             <TableRow>
                               <TableHead>Ingredient</TableHead>
                               <TableHead>Amount</TableHead>
-                              <TableHead>Unit</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
                             {calculateBatchRecipe(
                               Object.entries(recipes).find(([_, r]) => r.name === drinkName)?.[0] || '',
                               totalBottles
-                            ).map((ingredient, idx) => {
-                              const formatted = formatAmount(ingredient.amount, ingredient.unit);
-                              return (
-                                <TableRow key={idx}>
-                                  <TableCell>{ingredient.name}</TableCell>
-                                  <TableCell>{formatted.amount}</TableCell>
-                                  <TableCell>{formatted.unit}</TableCell>
-                                </TableRow>
-                              );
-                            })}
+                            ).map((ingredient, idx) => (
+                              <TableRow key={idx}>
+                                <TableCell>{ingredient.name}</TableCell>
+                                <TableCell>{formatAmount(ingredient.amount, ingredient.unit, ingredient.name)}</TableCell>
+                              </TableRow>
+                            ))}
                           </TableBody>
                         </Table>
                       </CardContent>
@@ -339,22 +366,17 @@ const BottledDrinksCalculator = () => {
                       <TableRow>
                         <TableHead>Ingredient</TableHead>
                         <TableHead>Total Amount</TableHead>
-                        <TableHead>Unit</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {Object.entries(getTotalIngredients())
                         .filter(([_, { amount }]) => amount > 0)
-                        .map(([name, { amount, unit }]) => {
-                          const formatted = formatAmount(amount, unit);
-                          return (
-                            <TableRow key={name}>
-                              <TableCell>{name}</TableCell>
-                              <TableCell>{formatted.amount}</TableCell>
-                              <TableCell>{formatted.unit}</TableCell>
-                            </TableRow>
-                          );
-                        })}
+                        .map(([name, { amount, unit }]) => (
+                          <TableRow key={name}>
+                            <TableCell>{name}</TableCell>
+                            <TableCell>{formatAmount(amount, unit, name)}</TableCell>
+                          </TableRow>
+                        ))}
                     </TableBody>
                   </Table>
                 </CardContent>
